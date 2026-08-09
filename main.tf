@@ -30,3 +30,12 @@ resource "aws_subnet" "private" {
     Name = "agnivega-private-subnet"
   }
 }
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name        = "agnivega-igw"
+    Environment = "dev"
+    Project     = "Sprint-1"
+  }
+}
