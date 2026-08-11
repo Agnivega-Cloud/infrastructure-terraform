@@ -30,18 +30,6 @@ resource "aws_subnet" "private" {
     Name = "agnivega-private-subnet"
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 resource "aws_security_group" "web" {
   name        = "agnivega-web-sg"
   description = "Security group for web servers"
@@ -109,7 +97,81 @@ resource "aws_route_table" "public" {
   }
 }
 
+
+
+resource "aws_key_pair" "bastion" {
+  key_name   = "agnivega-bastion-key"
+  public_key = file("~/.ssh/id_ed25519.pub")
+
+  tags = {
+    Name        = "agnivega-bastion-key"
+    Environment = "dev"
+    Project     = "Sprint-1"
+  }
+}
+
+resource "aws_instance" "bastion" {
+  ami                         = "ami-0d15e9052c94acb75"
+  instance_type               = "t3.micro"
+  subnet_id                   = aws_subnet.public.id
+  vpc_security_group_ids      = [aws_security_group.bastion.id]
+  key_name                    = aws_key_pair.bastion.key_name
+  associate_public_ip_address = true
+
+  tags = {
+    Name        = "agnivega-bastion"
+    Environment = "dev"
+    Project     = "Sprint-1"
+    Role        = "bastion-jenkins"
+  }
+}
+
+
+
+
+
+
+
+
+
+
 resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
+}
+
+resource "aws_security_group" "bastion" {
+  name        = "agnivega-bastion-sg"
+  description = "Security group for Bastion Host and Jenkins"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH from approved IP"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["103.164.240.221/32"]
+  }
+
+  ingress {
+    description = "Jenkins Web UI from approved IP"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["103.164.240.221/32"]
+  }
+
+  egress {
+    description = "Allow outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "agnivega-bastion-sg"
+    Environment = "dev"
+    Project     = "Sprint-1"
+  }
 }
